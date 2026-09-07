@@ -11,10 +11,72 @@ enum AppTab { home, chat, resources, sos, profile }
 enum AppLang { en, hi }
 enum ChatMode { text, call }
 
+// Check-in question model
+class CheckInQuestion {
+  const CheckInQuestion({
+    required this.id,
+    required this.en,
+    required this.hi,
+    required this.options,
+  });
+
+  final int id;
+  final String en;
+  final String hi;
+  final List<(String en, String hi)> options;
+}
+
+// Check-in questions
+final List<CheckInQuestion> checkInQuestions = [
+  CheckInQuestion(
+    id: 1,
+    en: "How are you feeling today?",
+    hi: "आज आप कैसा महसूस कर रहे हैं?",
+    options: [
+      ("Good", "अच्छा"),
+      ("Okay", "ठीक है"),
+      ("Not great", "बहुत अच्छा नहीं"),
+      ("Struggling", "संघर्ष कर रहे हैं"),
+    ],
+  ),
+  CheckInQuestion(
+    id: 2,
+    en: "Have you felt safe this week?",
+    hi: "क्या आप इस सप्ताह सुरक्षित महसूस कर रहे हैं?",
+    options: [
+      ("Yes, completely", "हाँ, पूरी तरह से"),
+      ("Mostly safe", "ज्यादातर सुरक्षित"),
+      ("Sometimes unsafe", "कभी-कभी असुरक्षित"),
+      ("No, I feel unsafe", "नहीं, असुरक्षित महसूस करता हूँ"),
+    ],
+  ),
+  CheckInQuestion(
+    id: 3,
+    en: "Are you able to sleep well?",
+    hi: "क्या आप अच्छी नींद ले पा रहे हैं?",
+    options: [
+      ("Yes, sleeping well", "हाँ, अच्छी नींद आ रही है"),
+      ("Sometimes", "कभी-कभी"),
+      ("Difficulty sleeping", "नींद आने में कठिनाई"),
+      ("Very poor sleep", "बहुत खराब नींद"),
+    ],
+  ),
+  CheckInQuestion(
+    id: 4,
+    en: "Do you need any support right now?",
+    hi: "क्या आपको अभी किसी सहायता की आवश्यकता है?",
+    options: [
+      ("No, I'm okay", "नहीं, मैं ठीक हूँ"),
+      ("Legal guidance", "कानूनी मार्गदर्शन"),
+      ("Counseling", "परामर्श"),
+      ("Emergency help", "आपातकालीन सहायता"),
+    ],
+  ),
+];
+
 String tx(String en, String hi, AppLang lang) => lang == AppLang.hi ? hi : en;
 
-// Global dark-mode notifier so MaterialApp can react outside widget tree
-final _darkModeNotifier = ValueNotifier<bool>(false);
+// Removed dark mode - using light theme only
 
 Future<void> _dial(String number) async {
   final uri = Uri(scheme: "tel", path: number);
@@ -31,19 +93,24 @@ Future<void> _openUrl(String url) async {
 }
 
 class AppColors {
-  static const blue = Color(0xFF1558A8);
-  static const blueLight = Color(0xFFEBF2FC);
-  static const emerald = Color(0xFF1A8C6E);
-  static const emeraldLight = Color(0xFFE6F5F0);
-  static const amber = Color(0xFFC96A0A);
-  static const amberLight = Color(0xFFFEF3E5);
-  static const danger = Color(0xFFB91C1C);
-  static const dangerLight = Color(0xFFFEE2E2);
-  static const text = Color(0xFF0D2137);
-  static const textSub = Color(0xFF3D5A6E);
-  static const textMuted = Color(0xFF8AA5BB);
-  static const border = Color(0xFFD4E1EE);
-  static const bg = Color(0xFFEFF3F8);
+  // Warm, vibrant, and cheerful color palette with good visibility
+  static const sunsetOrange = Color(0xFFFF8A5B);
+  static const sunsetOrangeLight = Color(0xFFFFF1EC);
+  static const goldenYellow = Color(0xFFFFC857);
+  static const goldenYellowLight = Color(0xFFFFFBF0);
+  static const warmPink = Color(0xFFFF6B9D);
+  static const warmPinkLight = Color(0xFFFFF0F5);
+  static const skyBlue = Color(0xFF5DADE2);
+  static const skyBlueLight = Color(0xFFEFF8FC);
+  static const mintGreen = Color(0xFF58D68D);
+  static const mintGreenLight = Color(0xFFEFFBF4);
+  static const danger = Color(0xFFE74C3C);
+  static const dangerLight = Color(0xFFFDEDEB);
+  static const text = Color(0xFF2C3E50);
+  static const textSub = Color(0xFF5D6D7E);
+  static const textMuted = Color(0xFF95A5A6);
+  static const border = Color(0xFFE0E6ED);
+  static const bg = Color(0xFFFFFBF7);
   static const surface = Color(0xFFFFFFFF);
 }
 
@@ -61,28 +128,16 @@ class SupportPathApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _darkModeNotifier,
-      builder: (context, isDark, _) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: "SupportPath",
-          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.blue),
-            scaffoldBackgroundColor: AppColors.bg,
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: AppColors.blue,
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
-          home: const SupportPathHome(),
-        );
-      },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: "SupportPath",
+      themeMode: ThemeMode.light,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.sunsetOrange),
+        scaffoldBackgroundColor: AppColors.bg,
+        useMaterial3: true,
+      ),
+      home: const SupportPathHome(),
     );
   }
 }
@@ -102,11 +157,15 @@ class _SupportPathHomeState extends State<SupportPathHome> {
   bool _consented = false;
   bool _sosActive = false;
   bool _monitoring = true;
-  bool _darkMode = false;
   bool _recording = false;
   bool _botTyping = false;
   String _notifFreq = "weekly";
   String _inputText = "";
+  
+  // Check-in state
+  bool _inCheckIn = false;
+  int _currentQuestionIndex = 0;
+  final Map<int, String> _checkInAnswers = {};
 
   final TextEditingController _controller = TextEditingController();
 
@@ -160,6 +219,61 @@ class _SupportPathHomeState extends State<SupportPathHome> {
     });
   }
 
+  void _startCheckIn() {
+    setState(() {
+      _inCheckIn = true;
+      _currentQuestionIndex = 0;
+      _checkInAnswers.clear();
+      _messages.clear();
+      _messages.add(ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch,
+        fromBot: true,
+        en: "Let's begin your wellness check-in. I'll ask you a few questions.",
+        hi: "चलिए आपकी wellness चेक-इन शुरू करते हैं। मैं आपसे कुछ प्रश्न पूछूंगा।",
+      ));
+    });
+  }
+
+  void _answerCheckInQuestion(String answer) {
+    final question = checkInQuestions[_currentQuestionIndex];
+    
+    setState(() {
+      _checkInAnswers[question.id] = answer;
+      
+      // Add user's answer to chat
+      _messages.add(ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch,
+        fromBot: false,
+        en: answer,
+        hi: answer,
+      ));
+      
+      _botTyping = true;
+    });
+
+    Timer(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      
+      setState(() {
+        _botTyping = false;
+        
+        if (_currentQuestionIndex < checkInQuestions.length - 1) {
+          // Move to next question
+          _currentQuestionIndex++;
+        } else {
+          // Check-in complete
+          _inCheckIn = false;
+          _messages.add(ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch + 1,
+            fromBot: true,
+            en: "Thank you for completing your check-in. Your responses have been recorded securely. Your next check-in is Thursday, 11 September at 10:00 AM.",
+            hi: "चेक-इन पूरा करने के लिए धन्यवाद। आपकी प्रतिक्रियाएं सुरक्षित रूप से दर्ज की गई हैं। अगला चेक-इन 11 सितंबर, गुरुवार को 10:00 AM है।",
+          ));
+        }
+      });
+    });
+  }
+
   void _triggerSOS() {
     setState(() => _sosActive = true);
     _dial("112");
@@ -201,7 +315,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: bg ?? AppColors.blue,
+        backgroundColor: bg ?? AppColors.sunsetOrange,
         foregroundColor: fg ?? Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -233,14 +347,6 @@ class _SupportPathHomeState extends State<SupportPathHome> {
             ),
           ],
         ),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: _triggerSOS,
-            child: const Text("SOS"),
-          ),
-          const SizedBox(width: 12),
-        ],
       ),
       drawer: _buildDrawer(),
       body: SafeArea(
@@ -323,7 +429,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                             child: _pillButton(
                               label: tx("Begin Journey", "शुरू करें", _lang),
                               onTap: _consented ? () => setState(() => _onboarded = true) : () {},
-                              bg: _consented ? AppColors.blue : AppColors.border,
+                              bg: _consented ? AppColors.sunsetOrange : AppColors.border,
                               fg: _consented ? Colors.white : AppColors.textMuted,
                             ),
                           ),
@@ -345,11 +451,11 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       child: ListView(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.blue),
+            decoration: const BoxDecoration(color: AppColors.sunsetOrange),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.shield, color: AppColors.blue)),
+                const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.shield, color: AppColors.sunsetOrange)),
                 const SizedBox(height: 12),
                 const Text("SupportPath", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                 Text(tx("Case ID: SP-2847", "केस ID: SP-2847", _lang), style: const TextStyle(color: Colors.white70)),
@@ -428,17 +534,17 @@ class _SupportPathHomeState extends State<SupportPathHome> {
 
   Widget _buildHome() {
     final cards = [
-      (tx("Text Check-ins", "चैट चेक-इन", _lang), "8", tx("This month", "इस माह", _lang), AppColors.blue),
-      (tx("Call Check-ins", "कॉल चेक-इन", _lang), "4", tx("This month", "इस माह", _lang), AppColors.amber),
-      (tx("Case Status", "केस की स्थिति", _lang), tx("Active", "सक्रिय", _lang), tx("FIR registered", "FIR दर्ज", _lang), const Color(0xFF6D51A6)),
-      (tx("Counselor", "परामर्शदाता", _lang), "Dr. Meena", tx("Assigned", "नियुक्त", _lang), AppColors.emerald),
+      (tx("Text Check-ins", "चैट चेक-इन", _lang), "8", tx("This month", "इस माह", _lang), AppColors.warmPink),
+      (tx("Call Check-ins", "कॉल चेक-इन", _lang), "4", tx("This month", "इस माह", _lang), AppColors.goldenYellow),
+      (tx("Case Status", "केस की स्थिति", _lang), tx("Active", "सक्रिय", _lang), tx("FIR registered", "FIR दर्ज", _lang), AppColors.skyBlue),
+      (tx("Counselor", "परामर्शदाता", _lang), "Dr. Meena", tx("Assigned", "नियुक्त", _lang), AppColors.mintGreen),
     ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: AppColors.blue,
+          color: AppColors.sunsetOrange,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -462,7 +568,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                         _chatMode = ChatMode.call;
                       }),
                       bg: Colors.white,
-                      fg: AppColors.amber,
+                      fg: AppColors.goldenYellow,
                     ),
                   ],
                 ),
@@ -501,14 +607,6 @@ class _SupportPathHomeState extends State<SupportPathHome> {
   }
 
   Widget _buildChat() {
-    final sentiments = [
-      ("Good", "अच्छा", AppColors.emerald),
-      ("Okay", "ठीक है", AppColors.blue),
-      ("Worried", "चिंतित", AppColors.amber),
-      ("Sad", "दुखी", const Color(0xFF6D51A6)),
-      ("Angry", "गुस्सा", AppColors.danger),
-    ];
-
     return Column(
       children: [
         Padding(
@@ -528,7 +626,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
-                  color: AppColors.amber,
+                  color: AppColors.goldenYellow,
                   child: Padding(
                     padding: const EdgeInsets.all(18),
                     child: Column(
@@ -542,7 +640,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                         ),
                         const SizedBox(height: 12),
                         FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.amber),
+                          style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.goldenYellow),
                           onPressed: () => _dial("9152987821"),
                           child: Text(tx("Initiate Automated Call Now", "अभी स्वचालित कॉल शुरू करें", _lang)),
                         ),
@@ -573,6 +671,19 @@ class _SupportPathHomeState extends State<SupportPathHome> {
           Expanded(
             child: Column(
               children: [
+                if (!_inCheckIn)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.sunsetOrange,
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
+                      onPressed: _startCheckIn,
+                      icon: const Icon(Icons.assignment_outlined),
+                      label: Text(tx("Start Wellness Check-in", "wellness चेक-इन शुरू करें", _lang)),
+                    ),
+                  ),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -613,7 +724,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                           decoration: BoxDecoration(
                             color: msg.fromBot
                                 ? Theme.of(context).colorScheme.surfaceContainerHighest
-                                : AppColors.blue,
+                                : AppColors.sunsetOrange,
                             borderRadius: BorderRadius.circular(14),
                             border: msg.fromBot
                                 ? Border.all(color: Theme.of(context).colorScheme.outlineVariant)
@@ -628,54 +739,106 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                     },
                   ),
                 ),
-                SizedBox(
-                  height: 44,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    children: sentiments.map((s) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ActionChip(
-                          label: Text(_lang == AppLang.hi ? s.$2 : s.$1),
-                          onPressed: () => _sendMessage(_lang == AppLang.hi ? s.$2 : s.$1),
-                          backgroundColor: s.$3.withOpacity(0.12),
-                          labelStyle: TextStyle(color: s.$3, fontWeight: FontWeight.w700),
+                if (_inCheckIn && !_botTyping)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.sunsetOrangeLight,
+                      border: Border(top: BorderSide(color: AppColors.border)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              tx("Question ${_currentQuestionIndex + 1} of ${checkInQuestions.length}",
+                                  "प्रश्न ${_currentQuestionIndex + 1} / ${checkInQuestions.length}",
+                                  _lang),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSub,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.sunsetOrange,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                "${(((_currentQuestionIndex) / checkInQuestions.length) * 100).round()}%",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: () => setState(() => _recording = !_recording),
-                        style: IconButton.styleFrom(backgroundColor: _recording ? AppColors.danger : null),
-                        icon: Icon(_recording ? Icons.stop : Icons.mic),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          onChanged: (v) => _inputText = v,
-                          onSubmitted: _sendMessage,
-                          decoration: InputDecoration(
-                            hintText: tx("Type your response…", "अपना उत्तर टाइप करें…", _lang),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
+                        const SizedBox(height: 12),
+                        Text(
+                          _lang == AppLang.hi
+                              ? checkInQuestions[_currentQuestionIndex].hi
+                              : checkInQuestions[_currentQuestionIndex].en,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: () => _sendMessage(_inputText),
-                        icon: const Icon(Icons.send),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        ...checkInQuestions[_currentQuestionIndex].options.map((option) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppColors.text,
+                                minimumSize: const Size(double.infinity, 48),
+                                alignment: Alignment.centerLeft,
+                              ),
+                              onPressed: () => _answerCheckInQuestion(_lang == AppLang.hi ? option.$2 : option.$1),
+                              child: Text(_lang == AppLang.hi ? option.$2 : option.$1),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  )
+                else if (!_inCheckIn)
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        IconButton.filledTonal(
+                          onPressed: () => setState(() => _recording = !_recording),
+                          style: IconButton.styleFrom(backgroundColor: _recording ? AppColors.danger : null),
+                          icon: Icon(_recording ? Icons.stop : Icons.mic),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            onChanged: (v) => _inputText = v,
+                            onSubmitted: _sendMessage,
+                            decoration: InputDecoration(
+                              hintText: tx("Type your response…", "अपना उत्तर टाइप करें…", _lang),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: () => _sendMessage(_inputText),
+                          icon: const Icon(Icons.send),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -688,27 +851,27 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       (
         tx("SC/ST Prevention of Atrocities Act", "SC/ST अत्याचार निवारण अधिनियम", _lang),
         tx("Legal protection and compensation support.", "कानूनी सुरक्षा और मुआवजा सहायता।", _lang),
-        AppColors.blue,
+        AppColors.sunsetOrange,
         "https://socialjustice.gov.in/",
       ),
       (
         tx("National Legal Services Authority (NALSA)", "राष्ट्रीय विधिक सेवा प्राधिकरण", _lang),
         tx("Free legal representation and FIR support.", "मुफ्त कानूनी प्रतिनिधित्व और FIR सहायता।", _lang),
-        AppColors.emerald,
+        AppColors.skyBlue,
         "https://nalsa.gov.in/",
       ),
       (
         tx("Psychosocial Rehabilitation Scheme", "मनोसामाजिक पुनर्वास योजना", _lang),
         tx("Counseling, trauma therapy, and psychiatric care.", "परामर्श, आघात चिकित्सा और मनोचिकित्सा।", _lang),
-        const Color(0xFF6D51A6),
+        AppColors.mintGreen,
         "https://nhm.gov.in/",
       ),
     ];
 
     final helplines = [
-      (tx("iCall Counseling", "iCall परामर्श", _lang), "9152987821", AppColors.blue),
-      (tx("National Helpline", "राष्ट्रीय हेल्पलाइन", _lang), "14566", AppColors.emerald),
-      (tx("NHRC Complaint", "NHRC शिकायत", _lang), "14433", AppColors.amber),
+      (tx("iCall Counseling", "iCall परामर्श", _lang), "9152987821", AppColors.warmPink),
+      (tx("National Helpline", "राष्ट्रीय हेल्पलाइन", _lang), "14566", AppColors.mintGreen),
+      (tx("NHRC Complaint", "NHRC शिकायत", _lang), "14433", AppColors.goldenYellow),
     ];
 
     return ListView(
@@ -769,10 +932,10 @@ class _SupportPathHomeState extends State<SupportPathHome> {
 
   Widget _buildSOS() {
     final quickDial = [
-      (tx("Police", "पुलिस", _lang), "100", AppColors.blue),
-      (tx("Counselor", "परामर्शदाता", _lang), "14566", AppColors.emerald),
-      (tx("Emergency", "आपातकाल", _lang), "112", const Color(0xFF6D51A6)),
-      ("NHRC", "14433", AppColors.amber),
+      (tx("Police", "पुलिस", _lang), "100", AppColors.sunsetOrange),
+      (tx("Counselor", "परामर्शदाता", _lang), "14566", AppColors.mintGreen),
+      (tx("Emergency", "आपातकाल", _lang), "112", AppColors.warmPink),
+      ("NHRC", "14433", AppColors.skyBlue),
     ];
 
     return ListView(
@@ -872,7 +1035,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: AppColors.blue,
+          color: AppColors.sunsetOrange,
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Colors.white24, child: Icon(Icons.person, color: Colors.white)),
             title: const Text("P****a D****", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
@@ -908,24 +1071,11 @@ class _SupportPathHomeState extends State<SupportPathHome> {
         ),
         const SizedBox(height: 12),
         Card(
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: Text(tx("Monitoring Active", "निगरानी सक्रिय", _lang)),
-                subtitle: Text(tx("Pause or stop anytime — your choice.", "कभी भी रोकें — आपकी इच्छा।", _lang)),
-                value: _monitoring,
-                onChanged: (v) => setState(() => _monitoring = v),
-              ),
-              SwitchListTile(
-                title: Text(tx("Dark Mode", "डार्क मोड", _lang)),
-                subtitle: Text(tx("Easier on the eyes at night.", "रात में आँखों के लिए।", _lang)),
-                value: _darkMode,
-                onChanged: (v) {
-                  setState(() => _darkMode = v);
-                  _darkModeNotifier.value = v;
-                },
-              ),
-            ],
+          child: SwitchListTile(
+            title: Text(tx("Monitoring Active", "निगरानी सक्रिय", _lang)),
+            subtitle: Text(tx("Pause or stop anytime — your choice.", "कभी भी रोकें — आपकी इच्छा।", _lang)),
+            value: _monitoring,
+            onChanged: (v) => setState(() => _monitoring = v),
           ),
         ),
         const SizedBox(height: 12),
