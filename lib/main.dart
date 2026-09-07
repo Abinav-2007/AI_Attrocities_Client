@@ -1,6 +1,7 @@
 import "dart:async";
 
 import "package:flutter/material.dart";
+import "package:url_launcher/url_launcher.dart";
 
 void main() {
   runApp(const SupportPathApp());
@@ -11,6 +12,23 @@ enum AppLang { en, hi }
 enum ChatMode { text, call }
 
 String tx(String en, String hi, AppLang lang) => lang == AppLang.hi ? hi : en;
+
+// Global dark-mode notifier so MaterialApp can react outside widget tree
+final _darkModeNotifier = ValueNotifier<bool>(false);
+
+Future<void> _dial(String number) async {
+  final uri = Uri(scheme: "tel", path: number);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  }
+}
+
+Future<void> _openUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
 
 class AppColors {
   static const blue = Color(0xFF1558A8);
@@ -43,15 +61,28 @@ class SupportPathApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "SupportPath",
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.blue),
-        scaffoldBackgroundColor: AppColors.bg,
-        useMaterial3: true,
-      ),
-      home: const SupportPathHome(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _darkModeNotifier,
+      builder: (context, isDark, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: "SupportPath",
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.blue),
+            scaffoldBackgroundColor: AppColors.bg,
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.blue,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          home: const SupportPathHome(),
+        );
+      },
     );
   }
 }
@@ -73,18 +104,21 @@ class _SupportPathHomeState extends State<SupportPathHome> {
   bool _monitoring = true;
   bool _darkMode = false;
   bool _recording = false;
+  bool _botTyping = false;
   String _notifFreq = "weekly";
   String _inputText = "";
 
   final TextEditingController _controller = TextEditingController();
-  final List<ChatMessage> _messages = const [
-    ChatMessage(
+
+  // Mutable list — removed const so .add() works
+  final List<ChatMessage> _messages = [
+    const ChatMessage(
       id: 1,
       fromBot: true,
       en: "Namaste, Priya. How are you feeling today?",
       hi: "नमस्ते, प्रिया। आज आप कैसा महसूस कर रहे हैं?",
     ),
-    ChatMessage(
+    const ChatMessage(
       id: 2,
       fromBot: true,
       en: "Select a response below, type freely, or switch to a voice call check-in above.",
@@ -101,24 +135,66 @@ class _SupportPathHomeState extends State<SupportPathHome> {
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
     setState(() {
-      _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, fromBot: false, en: text, hi: text));
+      _messages.add(ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch,
+        fromBot: false,
+        en: text,
+        hi: text,
+      ));
       _inputText = "";
       _controller.clear();
+      _botTyping = true;
     });
 
-    Timer(const Duration(milliseconds: 900), () {
+    Timer(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
       setState(() {
-        _messages.add(
-          const ChatMessage(
-            id: 999999,
-            fromBot: true,
-            en: "Thank you for sharing. Your response has been recorded. Your next check-in is Thursday, 11 September at 10:00 AM.",
-            hi: "साझा करने के लिए धन्यवाद। आपकी प्रतिक्रिया दर्ज की गई है। अगला चेक-इन 11 सितंबर, गुरुवार को 10:00 AM है।",
-          ),
-        );
+        _botTyping = false;
+        _messages.add(const ChatMessage(
+          id: 999999,
+          fromBot: true,
+          en: "Thank you for sharing. Your response has been recorded. Your next check-in is Thursday, 11 September at 10:00 AM.",
+          hi: "साझा करने के लिए धन्यवाद। आपकी प्रतिक्रिया दर्ज की गई है। अगला चेक-इन 11 सितंबर, गुरुवार को 10:00 AM है।",
+        ));
       });
     });
+  }
+
+  void _triggerSOS() {
+    setState(() => _sosActive = true);
+    _dial("112");
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tx("Leave Programme?", "कार्यक्रम छोड़ें?", _lang)),
+        content: Text(tx(
+          "You can rejoin at any time. Your data will be kept safe.",
+          "आप किसी भी समय फिर से जुड़ सकते हैं। आपका डेटा सुरक्षित रखा जाएगा।",
+          _lang,
+        )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(tx("Cancel", "रद्द करें", _lang)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              setState(() {
+                _onboarded = false;
+                _consented = false;
+                _tab = AppTab.home;
+              });
+            },
+            child: Text(tx("Leave", "छोड़ें", _lang)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _pillButton({required String label, required VoidCallback onTap, Color? bg, Color? fg}) {
@@ -135,82 +211,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_onboarded) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SegmentedButton<AppLang>(
-                            segments: const [
-                              ButtonSegment(value: AppLang.en, label: Text("English")),
-                              ButtonSegment(value: AppLang.hi, label: Text("हिंदी")),
-                            ],
-                            selected: {_lang},
-                            onSelectionChanged: (s) => setState(() => _lang = s.first),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          tx("We are here to support you.", "हम आपकी सहायता के लिए यहाँ हैं।", _lang),
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          tx(
-                            "A safe, confidential space to access support, legal resources, and your rights as a survivor.",
-                            "सहायता, कानूनी संसाधन और पीड़ित के रूप में अपने अधिकारों तक पहुँचने के लिए एक सुरक्षित, गोपनीय स्थान।",
-                            _lang,
-                          ),
-                          style: const TextStyle(color: AppColors.textSub),
-                        ),
-                        const SizedBox(height: 20),
-                        CheckboxListTile(
-                          value: _consented,
-                          onChanged: (v) => setState(() => _consented = v ?? false),
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            tx(
-                              "I agree to weekly wellness check-ins. I understand I can pause or stop at any time.",
-                              "मैं साप्ताहिक चेक-इन के लिए सहमत हूँ। मैं कभी भी रोक सकता/सकती हूँ।",
-                              _lang,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _pillButton(
-                                label: tx("Begin Journey", "शुरू करें", _lang),
-                                onTap: _consented ? () => setState(() => _onboarded = true) : () {},
-                                bg: _consented ? AppColors.blue : AppColors.border,
-                                fg: _consented ? Colors.white : AppColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    if (!_onboarded) return _buildOnboarding();
 
     final pageTitle = {
       AppTab.home: tx("Home", "होम", _lang),
@@ -227,28 +228,15 @@ class _SupportPathHomeState extends State<SupportPathHome> {
           children: [
             Text(pageTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
             Text(
-              tx("Sunday, 6 September 2026", "रविवार, 6 सितंबर 2026", _lang),
-              style: const TextStyle(fontSize: 12, color: AppColors.textSub),
+              tx("Sunday, 7 September 2026", "रविवार, 7 सितंबर 2026", _lang),
+              style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
         actions: [
-          SegmentedButton<AppLang>(
-            style: const ButtonStyle(visualDensity: VisualDensity.compact),
-            segments: const [
-              ButtonSegment(value: AppLang.en, label: Text("EN")),
-              ButtonSegment(value: AppLang.hi, label: Text("HI")),
-            ],
-            selected: {_lang},
-            onSelectionChanged: (s) => setState(() => _lang = s.first),
-          ),
-          const SizedBox(width: 8),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => setState(() {
-              _sosActive = true;
-              _tab = AppTab.sos;
-            }),
+            onPressed: _triggerSOS,
             child: const Text("SOS"),
           ),
           const SizedBox(width: 12),
@@ -275,6 +263,83 @@ class _SupportPathHomeState extends State<SupportPathHome> {
     );
   }
 
+  Widget _buildOnboarding() {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: SegmentedButton<AppLang>(
+                          segments: const [
+                            ButtonSegment(value: AppLang.en, label: Text("English")),
+                            ButtonSegment(value: AppLang.hi, label: Text("हिंदी")),
+                          ],
+                          selected: {_lang},
+                          onSelectionChanged: (s) => setState(() => _lang = s.first),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        tx("We are here to support you.", "हम आपकी सहायता के लिए यहाँ हैं।", _lang),
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        tx(
+                          "A safe, confidential space to access support, legal resources, and your rights as a survivor.",
+                          "सहायता, कानूनी संसाधन और पीड़ित के रूप में अपने अधिकारों तक पहुँचने के लिए एक सुरक्षित, गोपनीय स्थान।",
+                          _lang,
+                        ),
+                        style: const TextStyle(color: AppColors.textSub),
+                      ),
+                      const SizedBox(height: 20),
+                      CheckboxListTile(
+                        value: _consented,
+                        onChanged: (v) => setState(() => _consented = v ?? false),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          tx(
+                            "I agree to weekly wellness check-ins. I understand I can pause or stop at any time.",
+                            "मैं साप्ताहिक चेक-इन के लिए सहमत हूँ। मैं कभी भी रोक सकता/सकती हूँ।",
+                            _lang,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _pillButton(
+                              label: tx("Begin Journey", "शुरू करें", _lang),
+                              onTap: _consented ? () => setState(() => _onboarded = true) : () {},
+                              bg: _consented ? AppColors.blue : AppColors.border,
+                              fg: _consented ? Colors.white : AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDrawer() {
     return Drawer(
       child: ListView(
@@ -291,16 +356,52 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               ],
             ),
           ),
+          // Language selector moved from AppBar into the sidebar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx("Language", "भाषा", _lang),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<AppLang>(
+                  segments: const [
+                    ButtonSegment(value: AppLang.en, label: Text("English")),
+                    ButtonSegment(value: AppLang.hi, label: Text("हिंदी")),
+                  ],
+                  selected: {_lang},
+                  onSelectionChanged: (s) => setState(() => _lang = s.first),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 24),
           ...AppTab.values.map((tab) {
             final labels = {
               AppTab.home: tx("Home", "होम", _lang),
               AppTab.chat: tx("Chat", "चैट", _lang),
               AppTab.resources: tx("Support & Resources", "सहायता", _lang),
-              AppTab.sos: tx("Emergency SOS", "SOS", _lang),
+              AppTab.sos: tx("Emergency SOS", "आपातकालीन SOS", _lang),
               AppTab.profile: tx("Profile & Settings", "प्रोफ़ाइल", _lang),
+            };
+            const icons = {
+              AppTab.home: Icons.home_outlined,
+              AppTab.chat: Icons.chat_bubble_outline,
+              AppTab.resources: Icons.menu_book_outlined,
+              AppTab.sos: Icons.warning_amber_rounded,
+              AppTab.profile: Icons.person_outline,
             };
             return ListTile(
               selected: _tab == tab,
+              leading: Icon(icons[tab]),
               title: Text(labels[tab]!),
               onTap: () {
                 setState(() => _tab = tab);
@@ -308,6 +409,18 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               },
             );
           }),
+          const Divider(height: 24),
+          ListTile(
+            leading: const Icon(Icons.logout, color: AppColors.danger),
+            title: Text(
+              tx("Pause or Leave Programme", "कार्यक्रम रोकें या छोड़ें", _lang),
+              style: const TextStyle(color: AppColors.danger),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              _showLogoutDialog();
+            },
+          ),
         ],
       ),
     );
@@ -430,11 +543,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                         const SizedBox(height: 12),
                         FilledButton(
                           style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.amber),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(tx("Calling +91 XXXXX…", "कॉल हो रही है…", _lang))),
-                            );
-                          },
+                          onPressed: () => _dial("9152987821"),
                           child: Text(tx("Initiate Automated Call Now", "अभी स्वचालित कॉल शुरू करें", _lang)),
                         ),
                       ],
@@ -467,8 +576,33 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    itemCount: _messages.length + (_botTyping ? 1 : 0),
                     itemBuilder: (context, i) {
+                      if (_botTyping && i == _messages.length) {
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 10,
+                                  height: 10,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                SizedBox(width: 10),
+                                Text("typing…", style: TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                       final msg = _messages[i];
                       return Align(
                         alignment: msg.fromBot ? Alignment.centerLeft : Alignment.centerRight,
@@ -477,13 +611,17 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                           constraints: const BoxConstraints(maxWidth: 320),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: msg.fromBot ? Colors.white : AppColors.blue,
+                            color: msg.fromBot
+                                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                                : AppColors.blue,
                             borderRadius: BorderRadius.circular(14),
-                            border: msg.fromBot ? Border.all(color: AppColors.border) : null,
+                            border: msg.fromBot
+                                ? Border.all(color: Theme.of(context).colorScheme.outlineVariant)
+                                : null,
                           ),
                           child: Text(
                             _lang == AppLang.hi ? msg.hi : msg.en,
-                            style: TextStyle(color: msg.fromBot ? AppColors.text : Colors.white),
+                            style: TextStyle(color: msg.fromBot ? null : Colors.white),
                           ),
                         ),
                       );
@@ -551,16 +689,19 @@ class _SupportPathHomeState extends State<SupportPathHome> {
         tx("SC/ST Prevention of Atrocities Act", "SC/ST अत्याचार निवारण अधिनियम", _lang),
         tx("Legal protection and compensation support.", "कानूनी सुरक्षा और मुआवजा सहायता।", _lang),
         AppColors.blue,
+        "https://socialjustice.gov.in/",
       ),
       (
         tx("National Legal Services Authority (NALSA)", "राष्ट्रीय विधिक सेवा प्राधिकरण", _lang),
         tx("Free legal representation and FIR support.", "मुफ्त कानूनी प्रतिनिधित्व और FIR सहायता।", _lang),
         AppColors.emerald,
+        "https://nalsa.gov.in/",
       ),
       (
         tx("Psychosocial Rehabilitation Scheme", "मनोसामाजिक पुनर्वास योजना", _lang),
         tx("Counseling, trauma therapy, and psychiatric care.", "परामर्श, आघात चिकित्सा और मनोचिकित्सा।", _lang),
         const Color(0xFF6D51A6),
+        "https://nhm.gov.in/",
       ),
     ];
 
@@ -581,7 +722,10 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               leading: CircleAvatar(backgroundColor: h.$3.withOpacity(0.12), child: Icon(Icons.phone, color: h.$3)),
               title: Text(h.$1),
               subtitle: Text(h.$2),
-              trailing: FilledButton.tonal(onPressed: () {}, child: Text(tx("Call", "कॉल", _lang))),
+              trailing: FilledButton.tonal(
+                onPressed: () => _dial(h.$2),
+                child: Text(tx("Call", "कॉल", _lang)),
+              ),
             ),
           );
         }),
@@ -596,9 +740,23 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(s.$2, style: const TextStyle(color: AppColors.textSub)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.$2, style: const TextStyle(color: AppColors.textSub)),
+                      const SizedBox(height: 10),
+                      FilledButton.tonal(
+                        onPressed: () => _openUrl(s.$4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.open_in_new, size: 16),
+                            const SizedBox(width: 6),
+                            Text(tx("Visit Official Website", "आधिकारिक वेबसाइट देखें", _lang)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -613,7 +771,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
     final quickDial = [
       (tx("Police", "पुलिस", _lang), "100", AppColors.blue),
       (tx("Counselor", "परामर्शदाता", _lang), "14566", AppColors.emerald),
-      (tx("Family", "परिवार", _lang), "+91 XXXXX", const Color(0xFF6D51A6)),
+      (tx("Emergency", "आपातकाल", _lang), "112", const Color(0xFF6D51A6)),
       ("NHRC", "14433", AppColors.amber),
     ];
 
@@ -633,7 +791,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                 ),
                 const SizedBox(height: 18),
                 GestureDetector(
-                  onTap: () => setState(() => _sosActive = !_sosActive),
+                  onTap: _triggerSOS,
                   child: Container(
                     width: 170,
                     height: 170,
@@ -680,16 +838,20 @@ class _SupportPathHomeState extends State<SupportPathHome> {
           itemBuilder: (context, i) {
             final d = quickDial[i];
             return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.phone, color: d.$3),
-                    const Spacer(),
-                    Text(d.$1, style: TextStyle(color: d.$3, fontWeight: FontWeight.w700)),
-                    Text(d.$2),
-                  ],
+              child: InkWell(
+                onTap: () => _dial(d.$2),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.phone, color: d.$3),
+                      const Spacer(),
+                      Text(d.$1, style: TextStyle(color: d.$3, fontWeight: FontWeight.w700)),
+                      Text(d.$2),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -758,7 +920,10 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                 title: Text(tx("Dark Mode", "डार्क मोड", _lang)),
                 subtitle: Text(tx("Easier on the eyes at night.", "रात में आँखों के लिए।", _lang)),
                 value: _darkMode,
-                onChanged: (v) => setState(() => _darkMode = v),
+                onChanged: (v) {
+                  setState(() => _darkMode = v);
+                  _darkModeNotifier.value = v;
+                },
               ),
             ],
           ),
@@ -766,7 +931,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
         const SizedBox(height: 12),
         OutlinedButton(
           style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
-          onPressed: () {},
+          onPressed: _showLogoutDialog,
           child: Text(tx("Pause or Leave Programme", "कार्यक्रम रोकें या छोड़ें", _lang)),
         ),
       ],
