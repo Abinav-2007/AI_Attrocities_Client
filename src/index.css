@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+  font-family: 'Nunito', 'Noto Sans Devanagari', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(42, 122, 143, 0.3);
+  border-radius: 4px;
+}
+
+@theme inline {
+  --color-teal-primary: #1e7a8f;
+  --color-teal-light: #e8f5f8;
+  --color-sage: #4a9e7c;
+  --color-sage-light: #e8f4ef;
+  --color-emergency: #d32f2f;
+  --color-emergency-light: #ffebee;
+  --color-surface: #f7fbfc;
+  --color-card-bg: #ffffff;
+  --color-text-primary: #1a2f38;
+  --color-text-secondary: #4a6572;
+  --color-text-muted: #7a9aaa;
+  --color-border: #d0e8ee;
+}
