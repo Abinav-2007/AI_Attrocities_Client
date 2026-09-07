@@ -1,20 +1,25 @@
-node_modules/
-dist/
+# Flutter/Dart/Pub
+.dart_tool/
+.packages
+.pub/
 build/
-.cache/
-.env*
-.vite/
-vite.config.*.timestamp-*
-*.tsbuildinfo
-*-debug.log*
-logs/
-*.log
-.claude-replay.*
-.tmp-*
 
-# Platform-managed agentplat state, not project source. In the
-# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
-# repo root IS the workspace root, so these land inside this repo rather than
-# beside it.
+# Flutter generated
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Platform-managed agent state
 /.plugins/
 /.opencode-skills/
