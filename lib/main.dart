@@ -93,24 +93,32 @@ Future<void> _openUrl(String url) async {
 }
 
 class AppColors {
-  // Warm, vibrant, and cheerful color palette with good visibility
-  static const sunsetOrange = Color(0xFFFF8A5B);
-  static const sunsetOrangeLight = Color(0xFFFFF1EC);
-  static const goldenYellow = Color(0xFFFFC857);
-  static const goldenYellowLight = Color(0xFFFFFBF0);
-  static const warmPink = Color(0xFFFF6B9D);
-  static const warmPinkLight = Color(0xFFFFF0F5);
-  static const skyBlue = Color(0xFF5DADE2);
-  static const skyBlueLight = Color(0xFFEFF8FC);
-  static const mintGreen = Color(0xFF58D68D);
-  static const mintGreenLight = Color(0xFFEFFBF4);
-  static const danger = Color(0xFFE74C3C);
-  static const dangerLight = Color(0xFFFDEDEB);
-  static const text = Color(0xFF2C3E50);
-  static const textSub = Color(0xFF5D6D7E);
-  static const textMuted = Color(0xFF95A5A6);
-  static const border = Color(0xFFE0E6ED);
-  static const bg = Color(0xFFFFFBF7);
+  // Minimal Coral Palette - Clean and warm
+  
+  // BACKGROUNDS
+  static const pureWarmWhite = Color(0xFFFCFAF7);
+  static const softGray      = Color(0xFFF3F0EA);
+  
+  // ACCENTS
+  static const coralRose     = Color(0xFFEA7B7B);
+  static const darkCoral     = Color(0xFFB85A5A);
+  
+  // NEUTRALS
+  static const warmGray      = Color(0xFFB8B0A4);
+  static const warmBlack     = Color(0xFF3A3530);
+  
+  // TEXT
+  static const richCharcoal  = Color(0xFF1F1C19);
+  static const stone         = Color(0xFF8A8278);
+  
+  // SYSTEM COLORS (mapped from palette)
+  static const danger = coralRose;
+  static const dangerLight = Color(0xFFFFF5F5);
+  static const text = richCharcoal;
+  static const textSub = stone;
+  static const textMuted = warmGray;
+  static const border = softGray;
+  static const bg = pureWarmWhite;
   static const surface = Color(0xFFFFFFFF);
 }
 
@@ -133,7 +141,7 @@ class SupportPathApp extends StatelessWidget {
       title: "SupportPath",
       themeMode: ThemeMode.light,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.sunsetOrange),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.coralRose),
         scaffoldBackgroundColor: AppColors.bg,
         useMaterial3: true,
       ),
@@ -315,7 +323,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: bg ?? AppColors.sunsetOrange,
+        backgroundColor: bg ?? AppColors.coralRose,
         foregroundColor: fg ?? Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -429,7 +437,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                             child: _pillButton(
                               label: tx("Begin Journey", "शुरू करें", _lang),
                               onTap: _consented ? () => setState(() => _onboarded = true) : () {},
-                              bg: _consented ? AppColors.sunsetOrange : AppColors.border,
+                              bg: _consented ? AppColors.coralRose : AppColors.border,
                               fg: _consented ? Colors.white : AppColors.textMuted,
                             ),
                           ),
@@ -451,11 +459,11 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       child: ListView(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.sunsetOrange),
+            decoration: const BoxDecoration(color: AppColors.coralRose),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.shield, color: AppColors.sunsetOrange)),
+                const CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.shield, color: AppColors.coralRose)),
                 const SizedBox(height: 12),
                 const Text("SupportPath", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                 Text(tx("Case ID: SP-2847", "केस ID: SP-2847", _lang), style: const TextStyle(color: Colors.white70)),
@@ -534,17 +542,17 @@ class _SupportPathHomeState extends State<SupportPathHome> {
 
   Widget _buildHome() {
     final cards = [
-      (tx("Text Check-ins", "चैट चेक-इन", _lang), "8", tx("This month", "इस माह", _lang), AppColors.warmPink),
-      (tx("Call Check-ins", "कॉल चेक-इन", _lang), "4", tx("This month", "इस माह", _lang), AppColors.goldenYellow),
-      (tx("Case Status", "केस की स्थिति", _lang), tx("Active", "सक्रिय", _lang), tx("FIR registered", "FIR दर्ज", _lang), AppColors.skyBlue),
-      (tx("Counselor", "परामर्शदाता", _lang), "Dr. Meena", tx("Assigned", "नियुक्त", _lang), AppColors.mintGreen),
+      (tx("Text Check-ins", "चैट चेक-इन", _lang), "8", tx("This month", "इस माह", _lang), AppColors.coralRose),
+      (tx("Call Check-ins", "कॉल चेक-इन", _lang), "4", tx("This month", "इस माह", _lang), AppColors.warmGray),
+      (tx("Case Status", "केस की स्थिति", _lang), tx("Active", "सक्रिय", _lang), tx("FIR registered", "FIR दर्ज", _lang), AppColors.darkCoral),
+      (tx("Counselor", "परामर्शदाता", _lang), "Dr. Meena", tx("Assigned", "नियुक्त", _lang), AppColors.stone),
     ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: AppColors.sunsetOrange,
+          color: const Color.fromARGB(255, 185, 111, 154),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -560,7 +568,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                 Wrap(
                   spacing: 10,
                   children: [
-                    _pillButton(label: tx("Chat Check-in", "चैट चेक-इन", _lang), onTap: () => setState(() => _tab = AppTab.chat), bg: Colors.white24),
+                    _pillButton(label: tx("Chat Check-in", "चैट चेक-इन", _lang), onTap: () => setState(() => _tab = AppTab.chat), bg: const Color.fromARGB(255, 154, 151, 104)),
                     _pillButton(
                       label: tx("Voice Call Check-in", "वॉइस चेक-इन", _lang),
                       onTap: () => setState(() {
@@ -568,7 +576,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                         _chatMode = ChatMode.call;
                       }),
                       bg: Colors.white,
-                      fg: AppColors.goldenYellow,
+                      fg: AppColors.darkCoral,
                     ),
                   ],
                 ),
@@ -626,7 +634,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
-                  color: AppColors.goldenYellow,
+                  color: AppColors.warmGray,
                   child: Padding(
                     padding: const EdgeInsets.all(18),
                     child: Column(
@@ -640,7 +648,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                         ),
                         const SizedBox(height: 12),
                         FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.goldenYellow),
+                          style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.richCharcoal),
                           onPressed: () => _dial("9152987821"),
                           child: Text(tx("Initiate Automated Call Now", "अभी स्वचालित कॉल शुरू करें", _lang)),
                         ),
@@ -676,7 +684,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.sunsetOrange,
+                        backgroundColor: AppColors.coralRose,
                         minimumSize: const Size(double.infinity, 48),
                       ),
                       onPressed: _startCheckIn,
@@ -724,7 +732,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                           decoration: BoxDecoration(
                             color: msg.fromBot
                                 ? Theme.of(context).colorScheme.surfaceContainerHighest
-                                : AppColors.sunsetOrange,
+                                : AppColors.coralRose,
                             borderRadius: BorderRadius.circular(14),
                             border: msg.fromBot
                                 ? Border.all(color: Theme.of(context).colorScheme.outlineVariant)
@@ -743,7 +751,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.sunsetOrangeLight,
+                      color: AppColors.softGray,
                       border: Border(top: BorderSide(color: AppColors.border)),
                     ),
                     child: Column(
@@ -765,7 +773,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.sunsetOrange,
+                                color: AppColors.coralRose,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -851,27 +859,27 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       (
         tx("SC/ST Prevention of Atrocities Act", "SC/ST अत्याचार निवारण अधिनियम", _lang),
         tx("Legal protection and compensation support.", "कानूनी सुरक्षा और मुआवजा सहायता।", _lang),
-        AppColors.sunsetOrange,
+        AppColors.darkCoral,
         "https://socialjustice.gov.in/",
       ),
       (
         tx("National Legal Services Authority (NALSA)", "राष्ट्रीय विधिक सेवा प्राधिकरण", _lang),
         tx("Free legal representation and FIR support.", "मुफ्त कानूनी प्रतिनिधित्व और FIR सहायता।", _lang),
-        AppColors.skyBlue,
+        AppColors.coralRose,
         "https://nalsa.gov.in/",
       ),
       (
         tx("Psychosocial Rehabilitation Scheme", "मनोसामाजिक पुनर्वास योजना", _lang),
         tx("Counseling, trauma therapy, and psychiatric care.", "परामर्श, आघात चिकित्सा और मनोचिकित्सा।", _lang),
-        AppColors.mintGreen,
+        AppColors.warmGray,
         "https://nhm.gov.in/",
       ),
     ];
 
     final helplines = [
-      (tx("iCall Counseling", "iCall परामर्श", _lang), "9152987821", AppColors.warmPink),
-      (tx("National Helpline", "राष्ट्रीय हेल्पलाइन", _lang), "14566", AppColors.mintGreen),
-      (tx("NHRC Complaint", "NHRC शिकायत", _lang), "14433", AppColors.goldenYellow),
+      (tx("iCall Counseling", "iCall परामर्श", _lang), "9152987821", AppColors.coralRose),
+      (tx("National Helpline", "राष्ट्रीय हेल्पलाइन", _lang), "14566", AppColors.darkCoral),
+      (tx("NHRC Complaint", "NHRC शिकायत", _lang), "14433", AppColors.warmGray),
     ];
 
     return ListView(
@@ -932,10 +940,10 @@ class _SupportPathHomeState extends State<SupportPathHome> {
 
   Widget _buildSOS() {
     final quickDial = [
-      (tx("Police", "पुलिस", _lang), "100", AppColors.sunsetOrange),
-      (tx("Counselor", "परामर्शदाता", _lang), "14566", AppColors.mintGreen),
-      (tx("Emergency", "आपातकाल", _lang), "112", AppColors.warmPink),
-      ("NHRC", "14433", AppColors.skyBlue),
+      (tx("Police", "पुलिस", _lang), "100", AppColors.coralRose),
+      (tx("Counselor", "परामर्शदाता", _lang), "14566", AppColors.warmGray),
+      (tx("Emergency", "आपातकाल", _lang), "112", AppColors.darkCoral),
+      ("NHRC", "14433", AppColors.stone),
     ];
 
     return ListView(
@@ -1035,7 +1043,7 @@ class _SupportPathHomeState extends State<SupportPathHome> {
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: AppColors.sunsetOrange,
+          color: AppColors.coralRose,
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Colors.white24, child: Icon(Icons.person, color: Colors.white)),
             title: const Text("P****a D****", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
